@@ -1,7 +1,6 @@
 package de.damcraft.serverseeker.mixin;
 
 import com.google.gson.JsonObject;
-import de.damcraft.serverseeker.ServerSeeker;
 import de.damcraft.serverseeker.modules.BungeeSpoofModule;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.network.Http;
@@ -9,6 +8,7 @@ import net.minecraft.network.packet.c2s.handshake.ConnectionIntent;
 import net.minecraft.network.packet.c2s.handshake.HandshakeC2SPacket;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -36,9 +36,9 @@ public abstract class HandshakeC2SMixin {
     @Inject(
         method = "<init>(ILjava/lang/String;ILnet/minecraft/network/packet/c2s/handshake/ConnectionIntent;)V",
         at = @At("RETURN")
-    private void onHandshakeConstructed(int protocolVersion, String address, int port, 
-                                      ConnectionIntent intent, CallbackInfo ci) {
-        // Only process if this is a login handshake
+    )
+    private void onHandshakeConstructed(int protocolVersion, String address, int port,
+                                        ConnectionIntent intent, CallbackInfo ci) {
         if (getIntent() != ConnectionIntent.LOGIN) return;
 
         BungeeSpoofModule module = Modules.get().get(BungeeSpoofModule.class);
@@ -71,11 +71,9 @@ public abstract class HandshakeC2SMixin {
      */
     @Unique
     private String getPlayerUuid(String username) {
-        // First try to get from local session
         UUID localUuid = mc.getSession().getUuidOrNull();
         if (localUuid != null) return localUuid.toString().replace("-", "");
 
-        // Fallback to Mojang API lookup
         try {
             String response = Http.get(MOJANG_API_URL + username)
                 .timeout(3000)
@@ -91,7 +89,6 @@ public abstract class HandshakeC2SMixin {
             LOG.warn("Failed to fetch UUID from Mojang API", e);
         }
 
-        // Fallback to offline mode UUID
         return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes()).toString().replace("-", "");
     }
 }
