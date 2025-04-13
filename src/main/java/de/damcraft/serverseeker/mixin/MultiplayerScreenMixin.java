@@ -3,6 +3,7 @@ package de.damcraft.serverseeker.mixin;
 import de.damcraft.serverseeker.gui.GetInfoScreen;
 import de.damcraft.serverseeker.gui.ServerSeekerScreen;
 import de.damcraft.serverseeker.utils.ServerListUtils;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerServerListWidget;
@@ -20,10 +21,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MultiplayerScreen.class)
 public abstract class MultiplayerScreenMixin extends Screen {
     @Shadow protected MultiplayerServerListWidget serverListWidget;
-    
+
     @Unique private static final Identifier SERVER_SEEKER_ICON = new Identifier("serverseeker", "textures/gui/icon.png");
     @Unique private static final Identifier PLAYER_INFO_ICON = new Identifier("serverseeker", "textures/gui/players.png");
-    
+
     @Unique private ButtonWidget serverSeekerButton;
     @Unique private ButtonWidget playerInfoButton;
     @Unique private ButtonWidget quickJoinButton;
@@ -32,51 +33,53 @@ public abstract class MultiplayerScreenMixin extends Screen {
         super(title);
     }
 
-    @Inject(method = "init", at = @At(value = "INVOKE", 
-           target = "Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerScreen;updateButtonActivationStates()V"))
+    @Inject(method = "init", at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerScreen;updateButtonActivationStates()V"))
     private void onInit(CallbackInfo ci) {
         int buttonWidth = 20;
         int buttonX = this.width - buttonWidth - 5;
         int buttonSpacing = buttonWidth + 2;
-        
-        // ServerSeeker button with icon
+
+        // ServerSeeker button
         this.serverSeekerButton = this.addDrawableChild(
             new TexturedButtonWidget(
-                buttonX - buttonSpacing * 2, 
+                buttonX - buttonSpacing * 2,
                 3,
-                buttonWidth, 
+                buttonWidth,
                 20,
-                0, 0, 
-                20, 
-                SERVER_SEEKER_ICON, 
+                0, 0,
+                20,
+                SERVER_SEEKER_ICON,
                 20, 40,
                 btn -> this.client.setScreen(new ServerSeekerScreen((MultiplayerScreen) (Object) this)),
                 Text.literal("Open ServerSeeker")
+            )
         );
 
-        // Player Info button with icon
+        // Player Info button
         this.playerInfoButton = this.addDrawableChild(
             new TexturedButtonWidget(
-                buttonX - buttonSpacing, 
+                buttonX - buttonSpacing,
                 3,
-                buttonWidth, 
+                buttonWidth,
                 20,
-                0, 0, 
-                20, 
-                PLAYER_INFO_ICON, 
+                0, 0,
+                20,
+                PLAYER_INFO_ICON,
                 20, 40,
                 btn -> this.openPlayerInfoScreen(),
                 Text.literal("View Player Info")
+            )
         );
 
-        // Quick Join button (example additional feature)
+        // Quick Join button
         this.quickJoinButton = this.addDrawableChild(
-            new ButtonWidget.Builder(
-                Text.literal("Quick Join"),
-                btn -> ServerListUtils.joinBestServer((MultiplayerScreen) (Object) this)
-                .position(buttonX, 3)
-                .width(buttonWidth)
-                .build()
+            new ButtonWidget.Builder(Text.literal("Quick Join"), btn ->
+                ServerListUtils.joinBestServer((MultiplayerScreen) (Object) this)
+            )
+            .position(buttonX, 3)
+            .width(buttonWidth)
+            .build()
         );
     }
 
@@ -90,16 +93,15 @@ public abstract class MultiplayerScreenMixin extends Screen {
 
     @Inject(method = "updateButtonActivationStates", at = @At("TAIL"))
     private void onUpdateButtonActivationStates(CallbackInfo ci) {
-        boolean hasValidSelection = this.serverListWidget.getSelectedOrNull() != null 
+        boolean hasValidSelection = this.serverListWidget.getSelectedOrNull() != null
             && !(this.serverListWidget.getSelectedOrNull() instanceof MultiplayerServerListWidget.ScanningEntry);
-        
+
         this.playerInfoButton.active = hasValidSelection;
         this.quickJoinButton.active = hasValidSelection;
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void onRender(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        // Render tooltips when hovering over icon buttons
+    private void onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (this.serverSeekerButton.isHovered()) {
             context.drawTooltip(this.textRenderer, Text.literal("Open ServerSeeker"), mouseX, mouseY);
         }
@@ -110,4 +112,4 @@ public abstract class MultiplayerScreenMixin extends Screen {
             context.drawTooltip(this.textRenderer, Text.literal("Quick Join Best Server"), mouseX, mouseY);
         }
     }
-}
+                    }
